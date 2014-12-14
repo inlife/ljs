@@ -1,0 +1,173 @@
+#!/usr/bin/env php
+<?php
+
+/*
+ * This file is part of the LuaMac project.
+ *
+ * (c) Vladislav Gritsenko (Inlife) 
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+if (PHP_VERSION < "5.3.0") {
+    print("[luamac] Error: PHP 5 >= 5.3.0 is needed!\n");
+    exit(1);
+}
+
+if (count($argv) < 2) {
+    print("Usage: $ php luamac filename [outputfile]\n");
+    exit(1);
+}
+
+if (!file_exists($argv[1])) {
+    print("[luamac] Error: file (" . $argv[1] . ") is not found!\n");
+    exit(1);
+}
+
+class LuaMac {
+
+    private $rules;
+    private $files;
+
+    public function __construct($arguments)
+    {
+        $this->files = array(
+            "input"  => pathinfo($arguments[1]),
+            "output" => $arguments[2]
+        );
+
+        $this->rules = array(
+            "static"  => array(),
+            "dynamic" => array(
+                "/import\((?:\'|\\\")([A-Za-z0-9\/\.]+)(?:\'|\\\")\)[\;]?/" => function($m) {
+                    $filename = $this->files["input"]["dirname"] . DIRECTORY_SEPARATOR . $m[1];
+                    if (file_exists($filename)) {
+                        return $this->parse( file_get_contents($filename) );
+                    } else {
+                        print("[luamac] Error: imporing file (" . $filename . ") doesn't exists.\n");
+                        return "-- include(".$m[1].") - file not found.";
+                    }
+                },
+                "/\#define([\W\w]{1,128}?)\#def_as([\W\w]{1,256}?)\#end_def\R/" => function($m) {
+                    $this->addRule(
+                        $this->createCondition($m[1]),
+                        trim($m[2])
+                    );
+                },
+                "/\#compress\s+((?:true|false))/i" => function($m) {
+                    if ($m[1] === "true") {
+                        $this->addRule("/\s+/", " ");
+                    }
+                }
+            )
+        );
+    }
+
+    public function addRule($pattern, $replacement)
+    {
+        if (gettype($replacement) === "string") {
+
+            $this->rules["static"][$pattern] = $replacement;
+
+        } else if (gettype($replacement) === "object" && get_class($replacement) === "Closure") {
+
+            $this->rules["dynamic"][$pattern] = $replacement;
+
+        }
+
+        return $this;
+    }
+
+    private function createCondition($data)
+    {
+        $data = trim($data);
+        $data = addslashes($data);
+        $symbols = "[](){}";
+        for ($i = 0; $i < strlen($symbols); $i++) {
+            $data = str_replace($symbols[$i], "\\".($symbols[$i]), $data);
+        }
+        $data = str_replace(" ", "\s+", $data);
+        $data = str_replace("??", "([A-Za-z0-9\\\"\'\ _,]*)", $data);
+        $data = str_replace("?", "([A-Za-z0-9\\\"\'_]+)", $data);
+        $data = "/$data/";
+
+        return $data;
+    }
+
+    private function parse($content)
+    {
+        foreach($this->rules["dynamic"] as $pattern => $replacement)
+        {
+            $count = 0;
+
+            if ( preg_match($pattern, $content) ) {
+                $content = preg_replace_callback($pattern, $replacement, $content, -1, $count);
+                //printf("[luamac] Pattern #%d applied $count times.\n", $i);
+            }
+        }
+
+        foreach($this->rules["static"] as $pattern => $replacement)
+        {
+            $count = 0;
+
+            if ( preg_match($pattern, $content) ) {
+                $content = preg_replace($pattern, $replacement, $content, -1, $count);
+                //printf("[luamac] Pattern #%d applied $count times.\n", $i);
+            }
+        }
+
+        return $content;
+    }
+
+    public function start()
+    {
+        $started = microtime(); 
+
+        $this->save(
+            $this->parse( $this->load() )
+        );
+
+        printf("[luamac] Compiled in %.3fms.\n", (microtime() - $started));
+    }
+
+    private function load()
+    {
+        return file_get_contents($this->files["input"]["dirname"] . DIRECTORY_SEPARATOR . $this->files["input"]["basename"]);
+    }
+
+    private function save($data)
+    {
+        $data = "-- Compiled in LuaMac v0.1. \n-- github \n" . $data;
+        
+        if ($this->files["output"] && strlen($this->files["output"]) > 0) {
+
+            file_put_contents($this->files["input"]["dirname"] . DIRECTORY_SEPARATOR . $this->files["output"], $data);
+
+        } else {
+
+            file_put_contents($this->files["input"]["dirname"] . DIRECTORY_SEPARATOR . $this->files["input"]["filename"] . $this->getExtension(), $data);
+        }
+
+        return true;
+    }
+
+    private function getExtension() {
+        if ($this->files["input"]["extension"] === "luamac") {
+            return ".lua";
+        }
+        
+        return ".luamac";
+    }
+}
+
+// Create instance
+$luamac = new LuaMac($argv);
+
+// Register rules
+$luamac->addRule("/LUAMAC/", function() {
+    return "-- LuaMac: Version 0.1;";
+});
+
+// Parse file
+$luamac->start();
