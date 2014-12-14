@@ -4,7 +4,7 @@
 /*
  * This file is part of the LuaMac project.
  *
- * (c) Vladislav Gritsenko (Inlife) 
+ * (c) Vladislav Gritsenko (Inlife) https://github.com/Inlife/LuaMac
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -138,7 +138,7 @@ class LuaMac {
 
     private function save($data)
     {
-        $data = "-- Compiled in LuaMac v0.1. \n-- github \n" . $data;
+        $data = "-- Compiled in LuaMac v0.1. \n-- https://github.com/Inlife/LuaMac \n" . $data;
         
         if ($this->files["output"] && strlen($this->files["output"]) > 0) {
 
