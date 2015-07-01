@@ -1,40 +1,53 @@
 #!/usr/bin/env php
 <?php
 
-/*
- * This file is part of the LuaMac project.
+/**
+ * This file is part of the LJS project.
  *
- * (c) Vladislav Gritsenko (Inlife) https://github.com/Inlife/LuaMac
- *
+ * @author Vladislav Gritsenko (Inlife)
+ * @link https://github.com/Inlife/ljs
+ * 
+ * @copyright 
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
 
 if (PHP_VERSION < "5.3.0") {
-    print("[luamac] Error: PHP 5 >= 5.3.0 is needed!\n");
+    print("[ljs] Error: PHP 5 >= 5.3.0 is needed!\n");
     exit(1);
 }
 
 if (count($argv) < 2) {
-    print("Usage: $ php luamac filename [outputfile]\n");
+    print("Usage: $ php ljs filename [pattern [outputfile]]\n");
     exit(1);
 }
 
 if (!file_exists($argv[1])) {
-    print("[luamac] Error: file (" . $argv[1] . ") is not found!\n");
+    print("[ljs] Error: file (" . $argv[1] . ") is not found!\n");
     exit(1);
 }
 
-class LuaMac {
+if (isset($argv[2]) && !file_exists($argv[2])) {
+    print("[ljs] Error: pattern file (" . $argv[1] . ") is not found!\n");
+    exit(1);
+}
+
+class LJS {
 
     private $rules;
     private $files;
 
+
+    /**
+     * Create object, pass arguments
+     * @param array[string] $arguments 
+     */
     public function __construct($arguments)
     {
         $this->files = array(
             "input"  => pathinfo($arguments[1]),
-            "output" => $arguments[2]
+            "pattern" => @$arguments[2],
+            "output" => @$arguments[3]
         );
 
         $this->rules = array(
@@ -45,7 +58,7 @@ class LuaMac {
                     if (file_exists($filename)) {
                         return $this->parse( file_get_contents($filename) );
                     } else {
-                        print("[luamac] Error: imporing file (" . $filename . ") doesn't exists.\n");
+                        print("[ljs] Error: imporing file (" . $filename . ") doesn't exists.\n");
                         return "-- include(".$m[1].") - file not found.";
                     }
                 },
@@ -62,8 +75,18 @@ class LuaMac {
                 }
             )
         );
+
+        if (isset($this->files['pattern'])) {
+            return $this->parse( file_get_contents($this->files['pattern']) );
+        }
     }
 
+    /**
+     * Register action|value to insert|call on matching regex pattern
+     * @param string $pattern Regex pattern to register
+     * @param string|object-closure $replacement String that will be inserted on match, or closure that will be called
+     * @return object $this
+     */
     public function addRule($pattern, $replacement)
     {
         if (gettype($replacement) === "string") {
@@ -79,6 +102,11 @@ class LuaMac {
         return $this;
     }
 
+    /**
+     * When parsed from regex pattern from a file, we need to convert data
+     * @param string $data
+     * @return string
+     */
     private function createCondition($data)
     {
         $data = trim($data);
@@ -95,6 +123,11 @@ class LuaMac {
         return $data;
     }
 
+    /**
+     * Parsing file text data
+     * @param string $content
+     * @return string
+     */
     private function parse($content)
     {
         foreach($this->rules["dynamic"] as $pattern => $replacement)
@@ -120,6 +153,9 @@ class LuaMac {
         return $content;
     }
 
+    /**
+     * Start execution, load, parse and save file
+     */
     public function start()
     {
         $started = microtime(); 
@@ -128,46 +164,56 @@ class LuaMac {
             $this->parse( $this->load() )
         );
 
-        printf("[luamac] Compiled in %.3fms.\n", (microtime() - $started));
+        printf("[ljs] Compiled in %.3fms.\n", (microtime() - $started));
     }
 
+    /**
+     * Load input file from our input arrays
+     * @return string
+     */
     private function load()
     {
         return file_get_contents($this->files["input"]["dirname"] . DIRECTORY_SEPARATOR . $this->files["input"]["basename"]);
     }
 
+    /**
+     * Save data to file
+     * @param string $data Text data of parsed and processed input file
+     * @return boolean (true) save succeeded 
+     */
     private function save($data)
     {
-        $data = "-- Compiled in LuaMac v0.1. \n-- https://github.com/Inlife/LuaMac \n" . $data;
+        $data = "-- Compiled in LJS v0.1. \n-- https://github.com/Inlife/ljs \n" . $data;
         
         if ($this->files["output"] && strlen($this->files["output"]) > 0) {
-
             file_put_contents($this->files["input"]["dirname"] . DIRECTORY_SEPARATOR . $this->files["output"], $data);
-
         } else {
-
             file_put_contents($this->files["input"]["dirname"] . DIRECTORY_SEPARATOR . $this->files["input"]["filename"] . $this->getExtension(), $data);
         }
 
         return true;
     }
 
+    /**
+     * Extension which must be applied to file we are saving right now
+     * @return string
+     */
     private function getExtension() {
-        if ($this->files["input"]["extension"] === "luamac") {
+        if ($this->files["input"]["extension"] === "ljs") {
             return ".lua";
         }
         
-        return ".luamac";
+        return ".ljs";
     }
 }
 
 // Create instance
-$luamac = new LuaMac($argv);
+$ljs = new LJS($argv);
 
 // Register rules
-$luamac->addRule("/LUAMAC/", function() {
-    return "-- LuaMac: Version 0.1;";
+$ljs->addRule("/LJS/", function() {
+    return "-- LJS: Version 0.1;";
 });
 
 // Parse file
-$luamac->start();
+$ljs->start();

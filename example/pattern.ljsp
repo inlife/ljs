@@ -1,5 +1,6 @@
-#define class ? extends ? #def_as class $1 ($2) #end_def
+#define class ? extends ?? #def_as class $1 ($2) #end_def
 #define class ? #def_as class "$1" #end_def
+#define function constructor #def_as function __init__ #end_def
 
 #define 
     public function ?() 

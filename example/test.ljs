@@ -1,0 +1,25 @@
+class Foo {
+
+    public function constructor()
+        self.data = "Foo";
+    end,
+}
+
+
+class Bar extends Foo {
+    
+    public function constructor(param1, param2) 
+        self.data = "Bar";
+    end,
+
+    public function publicMethod()
+
+    end,
+
+    static function staticMethod()
+
+    end,
+}
+
+var b = new Bar();
+b->publicMethod();

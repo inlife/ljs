@@ -1,30 +1,27 @@
--- Compiled in LuaMac v0.1. 
--- github 
-
-
-
-
-
-
-
-class "Asd" {
+-- Compiled in LJS v0.1. 
+-- https://github.com/Inlife/ljs 
+class "Foo" {
 
     __init__ = function(self)
-        self.data = "asd";
+        self.data = "Foo";
     end,
 }
 
 
-class "Example" (Asd) {
+class "Bar" (Foo ){
     
-    __init__ = function(self, data, gasd) 
-        self.data = "Example";
+    __init__ = function(self, param1, param2) 
+        self.data = "Bar";
     end,
 
-    method = function()
+    publicMethod = function(self)
+
+    end,
+
+    staticMethod = function()
 
     end,
 }
 
-local b = Example();
-b:getAllShit();
+local b = Bar();
+b:publicMethod();
