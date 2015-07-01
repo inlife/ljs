@@ -6,8 +6,8 @@ Working via regex, translating by rules, described in __pattern__ file.
 ##Usage
 `$ php ljs input [pattern [output]]`
 
-`$ php ljs path/to/file.ljs` - default output is filename: __path/to/file__.lua
-`$ php ljs path/to/file.ljs pattern.ljsp`
+`$ php ljs path/to/file.ljs` - default output is filename: __path/to/file__.lua<br>
+`$ php ljs path/to/file.ljs pattern.ljsp`<br>
 `$ php ljs path/to/file.ljs pattern.ljsp other/path/to/file.lua` 
 
 ##Example
