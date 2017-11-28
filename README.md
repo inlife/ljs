@@ -3,15 +3,16 @@ LJS
 Lua JavaScript-like pseudo syntax translator. It is written on php 5.3.
 Working via regex, translating by rules, described in __pattern__ file.
 
-##Usage
+## Usage
 `$ php ljs input [pattern [output]]`
 
 `$ php ljs path/to/file.ljs` - default output is filename: __path/to/file__.lua<br>
 `$ php ljs path/to/file.ljs pattern.ljsp`<br>
 `$ php ljs path/to/file.ljs pattern.ljsp other/path/to/file.lua` 
 
-##Example
+## Example
 This __ljs__ code:
+
 ```js
 class Foo {
     public function constructor()
@@ -38,8 +39,10 @@ var b = new Bar();
 b->publicMethod();
 ```
 <br>
+
 Using this pattern:
-```
+
+```cpp
 #define class ? extends ?? #def_as class $1 ($2) #end_def
 #define class ? #def_as class "$1" #end_def
 #define function constructor #def_as function __init__ #end_def
@@ -62,7 +65,9 @@ Using this pattern:
 
 <br>
 Will be translated to this __lua__ code:
+
 ```lua
+
 class "Foo" {
     __init__ = function(self)
         self.data = "Foo";
